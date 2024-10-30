@@ -32,3 +32,26 @@ While some basic comments are included in the code, an overview can be found bel
 	- **Sensor Task** - This task waits for the chosen characteristic to be written to, and sets the motor control/servo control as required.
 - There are then three additional functions.  `control_motors` processes the angle and strength of the joystick input, and converts that to motor speed and servo angle values. `set_motor_speeds` directly modifies the PWM output of each of the pins, according to the values calculated in the `control_motors` function. `set_servo_angle` directly sets the PWM output for the servo control, as per the value calculated again in the `control_motors` function.
 
+# Licence
+
+MIT License
+
+Copyright (c) 2024 Bruce Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
