@@ -1,3 +1,4 @@
+
 # Welcome to the Robotics Society PicoBot Pico code
 
 This repo contains the printable files for the Picobot, alongside the basic MicroPython code, which for Bluetooth control of the Pico's output pins, when connected correctly to the motor controller and servo. 
@@ -12,7 +13,8 @@ This repo contains the printable files for the Picobot, alongside the basic Micr
 |[RPI_PICO_W-20240602-v1.23.0.uf2](https://github.com/hw-robsoc/picobot/blob/main/RPI_PICO_W-20240602-v1.23.0.uf2 "RPI_PICO_W-20240602-v1.23.0.uf2")|The MicroPico firmware version we are using, which includes access to newer BLE libraries.|
 |[PicoBot-AllDriveTypes.pdf](https://github.com/hw-robsoc/picobot/blob/main/PicoBot-AllDriveTypes.pdf "PicoBot-AllDriveTypes.pdf")|The laser cut design for all laser cut parts. Note: This is provided as a PDF, as when exporting to SVG from illustrator, the dimensions are wrong, and when exporting to DXF, the order of cuts is changed, resulting in parts that don't break away from the acrylic sheet.|
 |[PicoBot-DrifterWheel.stl](https://github.com/hw-robsoc/picobot/blob/main/PicoBot-DrifterWheel.stl "PicoBot-DrifterWheel.stl")| 3D printable wheels for the drifer type kart.|
-|[PicoBot-Pivot-Mount.stl](https://github.com/hw-robsoc/picobot/blob/main/PicoBot-Pivot-Mount.stl "PicoBot-Pivot-Mount.stl")| Sample pivot mount design for the racer type kart.
+|[PicoBot-Pivot-Mount.stl](https://github.com/hw-robsoc/picobot/blob/main/PicoBot-Pivot-Mount.stl "PicoBot-Pivot-Mount.stl")| Sample pivot mount design for the racer type kart.|
+|[Instructions-Session1.pdf](https://github.com/hw-robsoc/picobot/blob/main/Instructions-Session1.pdf "Instructions-Session1.pdf") [Instructions-Session2.pdf](https://github.com/hw-robsoc/picobot/blob/main/Instructions-Session2.pdf "Instructions-Session2.pdf") [Instructions-Session3.pdf](https://github.com/hw-robsoc/picobot/blob/main/Instructions-Session3.pdf "Instructions-Session3.pdf")| Instruction sets for assembly, wiring, and programming. Instructions for power system are still to come!|
 
 # Flashing firmware to the Pico
 Hold down the BOOTSEL button while plugging the board into USB. The uf2 file below should then be copied to the USB mass storage device that appears. Once programming of the new firmware is complete the device will automatically reset and be ready for use.
