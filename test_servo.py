@@ -11,12 +11,12 @@ def scale_value(value, input_min=0, input_max=180, output_min=1000000, output_ma
 pwm = PWM(Pin(6))
 
 pwm.freq(50)
-pwm.duty_ns(scale_value(0))
+#pwm.duty_ns(scale_value(0))
 
 while True:
+    pwm.duty_ns(scale_value(-90))
+    utime.sleep(1)
     pwm.duty_ns(scale_value(0))
     utime.sleep(1)
     pwm.duty_ns(scale_value(90))
-    utime.sleep(1)
-    pwm.duty_ns(scale_value(180))
     utime.sleep(1)

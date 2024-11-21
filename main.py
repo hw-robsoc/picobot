@@ -10,6 +10,9 @@ import random
 import struct
 from machine import Pin, PWM
 
+def clamp(value, minV, maxV):
+    return min(max(value, minV), maxV)
+
 def uid():
     """ Return the unique id of the device as a string """
     return "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}".format(
@@ -62,6 +65,8 @@ pin_mode_state = pin_mode.value()
 if pin_mode_state == 1:
     steering_mode = "servo"
 
+steering_mode = "motor-servo" # override
+
 # Register all 4 pins that we need to control the motor controller (s)
 pin_A_1 = PWM(Pin(0, mode=Pin.OUT))
 pin_A_2 = PWM(Pin(1, mode=Pin.OUT))
@@ -72,7 +77,6 @@ pin_B_2 = PWM(Pin(3, mode=Pin.OUT))
 pin_servo = PWM(Pin(6, mode=Pin.OUT))
 
 # Set PWM frequency
-
 pin_A_1.freq(50000)
 pin_A_2.freq(50000)
 pin_B_1.freq(50000)
@@ -85,6 +89,7 @@ pin_servo.freq(PWM_FREQUENCY)
 # This would be periodically polling a hardware sensor.
 async def sensor_task():
     global connected
+    print(steering_mode)
     while True:
         if connected:
             char_obj = await button_characteristic.written()
@@ -96,74 +101,69 @@ async def sensor_task():
                 strength = int(direction_tup[1]) 
 
                 control_motors(angle, strength)
-
             else:
                 print("Received none")
         await asyncio.sleep_ms(100)
 
+# general properties
+steerThreshold = 10
+servoOffset, servoMin, servoMax = -100, -200, 60
+
 # Main control function
 def control_motors(angle, strength):
     # Pico PWM duty cycle is between 0-65025, where as our input from the joystick is 0-100, so we rescale it here.
-    strength_duty = strength * 650 
+    strength_duty = (strength * 3) * 650 # joystick x3 sensitivity
 
     # Normalize angle to range between 0 to 360
     angle = angle % 360
 
-    if steering_mode == "motor":
-        if angle <= 90:  # First quadrant (forward, left turn)
-            left_speed = strength_duty * (angle / 90)    # Increase left motor speed
-            right_speed = strength_duty                  # Full speed on right motor
+    left_speed, right_speed = 0, 0
 
-        elif angle <= 180:  # Second quadrant (forward, right turn)
-            left_speed = strength_duty                   # Full speed on left motor
-            right_speed = strength_duty * (1 - (angle - 90) / 90)  # Decrease right motor speed
+    if steering_mode != "motor": # servo or servo + motor
+        if strength > steerThreshold:
+            if angle <= 180:
+                set_servo_angle(clamp(180 - angle + servoOffset, servoMin, servoMax))
+            else:
+                set_servo_angle(clamp((angle % 180) + servoOffset, servoMin, servoMax))
 
-        elif angle <= 270:  # Third quadrant (backward, right turn)
-            left_speed = -strength_duty                  # Full reverse on left motor
-            right_speed = -strength_duty * ((angle - 180) / 90)     # Increase reverse speed on right motor
-
-        else:  # Fourth quadrant (backward, left turn)
-            left_speed = -strength_duty * (1 - (angle - 270) / 90)  # Decrease reverse speed on left motor
-            right_speed = -strength_duty                             # Full reverse on right motor
-
-        # Apply motor speeds
-        set_motor_speeds(left_speed, right_speed)
-
-    else:
+    if steering_mode == "servo": # original servo mode
         if angle <= 180: # Top half (forward, angle)
             left_speed = strength_duty
             right_speed = strength_duty
-            if(strength > 20): # Add this small limit in near the center to prevent lots of glitching near the middle
-                set_servo_angle(180 - angle)
         else:
             left_speed = -strength_duty
             right_speed = -strength_duty
-            if(strength > 20): # Add this small limit in near the center to prevent lots of glitching near the middle
-                set_servo_angle((angle % 180))
+    else: # motor or servo + motor modes
+        if angle <= 90:  # First quadrant (forward, left turn)
+            right_speed = strength_duty * (angle / 90)    # Increase left motor speed
+            left_speed = strength_duty                  # Full speed on right motor
 
-        set_motor_speeds(left_speed, right_speed)
+        elif angle <= 180:  # Second quadrant (forward, right turn)
+            right_speed = strength_duty                   # Full speed on left motor
+            left_speed = strength_duty * (1 - (angle - 90) / 90)  # Decrease right motor speed
 
+        elif angle <= 270:  # Third quadrant (backward, right turn)
+            right_speed = -strength_duty                  # Full reverse on left motor
+            left_speed = -strength_duty * ((angle - 180) / 90)     # Increase reverse speed on right motor
 
+        else:  # Fourth quadrant (backward, left turn)
+            right_speed = -strength_duty * (1 - (angle - 270) / 90)  # Decrease reverse speed on left motor
+            left_speed = -strength_duty                             # Full reverse on right motor
 
-# Function to set motor speeds
-def set_motor_speeds(left_speed, right_speed):
+    # set motor speeds
+    setMotorSpeed(pin_A_1, pin_A_2, left_speed) # A
+    setMotorSpeed(pin_B_1, pin_B_2, right_speed) # B
 
-    # Left motor
-    if left_speed >= 0:
-        pin_A_1.duty_u16(int(left_speed))  # Forward
-        pin_A_2.duty_u16(0)                # Reverse off
+# Function to set motor speed
+def setMotorSpeed(pin1, pin2, speed):
+    if speed >= 0:
+        pin1.duty_u16(int(speed)) # set forward
+        pin2.duty_u16(0) # reverse off
     else:
-        pin_A_1.duty_u16(0)                # Forward off
-        pin_A_2.duty_u16(int(-left_speed)) # Reverse
+        pin1.duty_u16(0) # forward off
+        pin2.duty_u16(int(-speed)) # set reverse
 
-    # Right motor
-    if right_speed >= 0:
-        pin_B_1.duty_u16(int(right_speed)) # Forward
-        pin_B_2.duty_u16(0)                # Reverse off
-    else:
-        pin_B_1.duty_u16(0)                # Forward off
-        pin_B_2.duty_u16(int(-right_speed))# Reverse
-
+# Set angle of servo motor
 def set_servo_angle(value, input_min=0, input_max=180, output_min=1000000, output_max=2000000):
     # Scaling formula
     scaled_value = int(((value - input_min) / (input_max - input_min)) * (output_max - output_min) + output_min)
@@ -176,15 +176,16 @@ async def peripheral_task():
     while True:
         async with await aioble.advertise(
             _ADV_INTERVAL_MS,
-            name="robot-1",
+            name="robot-8",
             services=[_ENV_SENSE_UUID],
             appearance=_BLE_APPEARANCE_GENERIC_REMOTE_CONTROL,
         ) as connection:
             connected = True
-            # print("Connection from", connection.device)
+            print("Connection from", connection.device)
             await connection.disconnected(timeout_ms=None)
             connected = False
 
+# Blinking light to indicate bluetooth connection
 async def blink_task():
     toggle = True
     while True:
@@ -199,6 +200,7 @@ async def blink_task():
 
 # Run the three tasks.
 async def main():
+    print("started")
     tasks = [
         asyncio.create_task(peripheral_task()),
         asyncio.create_task(blink_task()),
